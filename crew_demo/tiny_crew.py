@@ -1,5 +1,17 @@
 import sqlite3
+import subprocess
 import requests
+
+# 0) Ensure model is downloaded
+MODEL_NAME = "gemma2:2b"
+OLLAMA_URL = "http://localhost:11434"
+
+# Check if model exists locally
+result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
+if MODEL_NAME not in result.stdout:
+    print(f"Model {MODEL_NAME} not found. Pulling now...")
+    subprocess.run(["ollama", "pull", MODEL_NAME])
+    print(f"Model {MODEL_NAME} downloaded.")
 
 # 1) Read supplier list
 conn = sqlite3.connect('../risk.db')
@@ -14,18 +26,14 @@ prompt = (
     "Risk notes:"
 )
 
-# 3) Define the Ollama server URL and model name
-OLLAMA_URL = "http://localhost:11434"
-MODEL_NAME = "gemma2:2b"
-
-# 4) Generate text using Gemma 2B
+# 3) Generate text using Gemma 2B
 response = requests.post(
     f"{OLLAMA_URL}/api/generate",
     json={"model": MODEL_NAME, "prompt": prompt, "stream": False},
-    timeout=60
+    timeout=120  # increase timeout for first run
 )
 
-# 5) Print the response
+# 4) Print the response
 if response.status_code == 200:
     data = response.json()
     print("Raw model output:", data["response"])
