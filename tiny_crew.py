@@ -15,14 +15,13 @@ if MODEL_NAME not in result.stdout:
 
 # 1) Read supplier list
 conn = sqlite3.connect('../risk.db')
-cur = conn.cursor()
-rows = cur.execute("SELECT supplier_name, delivery_days FROM suppliers").fetchall()
+suppliers = conn.execute("SELECT supplier_name, delivery_days FROM suppliers").fetchall()
 conn.close()
 
 # 2) Build the prompt
 prompt = (
     "For each supplier, write one short risk note (max 12 words).\n"
-    + "\n".join(f"{name}: {days} days" for name, days in rows) + "\n\n"
+    + "\n".join(f"{name}: {days} days" for name, days in suppliers) + "\n\n"
     "Risk notes:"
 )
 
