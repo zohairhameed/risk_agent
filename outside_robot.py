@@ -14,16 +14,16 @@ if MODEL_NAME not in result.stdout:
     print(f"Model {MODEL_NAME} downloaded.")
 
 # 1) Read supplier list
-conn = sqlite3.connect('../risk.db')
+conn = sqlite3.connect('risk.db')
 suppliers = conn.execute("SELECT supplier_name, delivery_days FROM suppliers").fetchall()
-outside = conn.execute("SELECT data FROM outside_data WHERE source='port_delays'").fetchone()[0]
+outside = conn.execute("SELECT data FROM outside_data WHERE source='sanctions'").fetchone()[0]
 conn.close()
 
 # 2) Build the prompt
 prompt = (
     "Suppliers and delivery days:\n"
     + "\n".join(f"{n}: {d} days" for n, d in suppliers) + "\n\n"
-    f"Port delays: {outside}\n\n"
+    f"Sanctions: {outside}\n\n"
     "For each supplier, write one concise risk note (≤12 words)."
 )
 

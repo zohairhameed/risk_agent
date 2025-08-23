@@ -14,7 +14,7 @@ if MODEL_NAME not in result.stdout:
     print(f"Model {MODEL_NAME} downloaded.")
 
 # 1) Read supplier list
-conn = sqlite3.connect('../risk.db')
+conn = sqlite3.connect('risk.db')
 suppliers = conn.execute("SELECT supplier_name, delivery_days FROM suppliers").fetchall()
 conn.close()
 
