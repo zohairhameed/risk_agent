@@ -11,15 +11,16 @@ if MODEL_NAME not in result.stdout:
     subprocess.run(["ollama", "pull", MODEL_NAME])
     print(f"Model {MODEL_NAME} downloaded.")
 
-# 2) Read supplier list
+# 2) Read supplier list 
 conn = sqlite3.connect('risk.db')
-suppliers = conn.execute("SELECT supplier_name, delivery_days FROM suppliers").fetchall()
+suppliers = conn.execute("SELECT supplier_name, delivery_days, country FROM suppliers").fetchall()
+supplier_text = "\n".join([f"{name}: {days} days from {location}" for name, days, location in suppliers])
 conn.close()
 
 # 3) Build the prompt
 prompt = (
     "For each supplier, write one short risk note (max 12 words).\n"
-    + "\n".join(f"{name}: {days} days" for name, days in suppliers) + "\n\n"
+    + supplier_text + "\n\n"
     "Risk notes:"
 )
 

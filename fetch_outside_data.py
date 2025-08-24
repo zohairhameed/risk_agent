@@ -11,16 +11,16 @@ def fetch_port_delays():
         r = requests.get(url, timeout=10)
         return r.json()
     except:
-        return {"port": "demo", "delay_hours": 0}
+        return {"Port": "Ningbo", "Delay_Hours": 12}
 
 # 2) Example: OpenWeather typhoon risk (free key)
 def fetch_weather():
     # Using a public demo response
-    return {"city": "Shanghai", "risk": "low", "date": TODAY}
+    return {"City": "Shanghai", "Risk": "Low", "Date": TODAY}
 
 # 3) Example: OFAC sanctions list (static CSV for demo)
 def fetch_sanctions():
-    return [{"supplier": "Acme Bolts", "status": "sanctions"}]
+    return [{"Supplier": "Acme Bolts", "Status": "Country Sanctions"}]
 
 # 4) Save everything to SQLite
 conn = sqlite3.connect(DB)

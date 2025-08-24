@@ -6,10 +6,8 @@ llm=LLM(model="ollama/gemma2:2b", base_url="http://localhost:11434")
 
 # 1) Connect to the database and fetch supplier data
 conn = sqlite3.connect('risk.db')
-cursor = conn.cursor()
-cursor.execute("SELECT supplier_name, delivery_days FROM suppliers")
-suppliers = cursor.fetchall()
-supplier_text = "\n".join([f"{name}: {days} days" for name, days in suppliers])
+suppliers = conn.execute("SELECT supplier_name, delivery_days, country FROM suppliers").fetchall()
+supplier_text = "\n".join([f"{name}: {days} days from {location}" for name, days, location in suppliers])
 conn.close()
 
 # 2) Initialize the CrewAI agent
@@ -24,10 +22,10 @@ agent = Agent(
 
 # 3) Create the task
 task = Task(
-    description=f"""Analyze supplier risks for the following suppliers and their delivery days:
+    description=f"""Analyze supplier risks for the following supplier info:
 {supplier_text}
-Provide concise risk notes for each supplier.""",
-    expected_output="A list of concise risk notes for each supplier",
+Provide concise risk notes for each supplier (<= 12 words).""",
+    expected_output="A list of concise risk notes for each supplier (<= 12 words)",
     agent=agent
 )
 

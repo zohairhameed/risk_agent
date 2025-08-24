@@ -1,41 +1,50 @@
-import sqlite3, subprocess, requests
+import sqlite3, json
 from crewai import Agent, Task, Process, Crew, LLM
 
-# 0) Ensure model is downloaded
-MODEL_NAME = "gemma2:2b"
-OLLAMA_URL = "http://localhost:11434"
+# 0) Initialize the LLM
+llm=LLM(model="ollama/gemma2:2b", base_url="http://localhost:11434")
 
-# Check if model exists locally
-result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
-if MODEL_NAME not in result.stdout:
-    print(f"Model {MODEL_NAME} not found. Pulling now...")
-    subprocess.run(["ollama", "pull", MODEL_NAME])
-    print(f"Model {MODEL_NAME} downloaded.")
-
-# 1) Read supplier list
+# 1) Read supplier list and outside data from the database
 conn = sqlite3.connect('risk.db')
-suppliers = conn.execute("SELECT supplier_name, delivery_days FROM suppliers").fetchall()
+suppliers = conn.execute("SELECT supplier_name, delivery_days, country FROM suppliers").fetchall()
+supplier_text = "\n".join([f"{name}: {days} days from {location}" for name, days, location in suppliers])
 outside = conn.execute("SELECT data FROM outside_data WHERE source='sanctions'").fetchone()[0]
+sanctions_data = json.loads(outside)
+outside_text = "\n".join([f"Supplier: {item['Supplier']}, Status: {item['Status']}" for item in sanctions_data])
 conn.close()
 
-# 2) Build the prompt
-prompt = (
-    "Suppliers and delivery days:\n"
-    + "\n".join(f"{n}: {d} days" for n, d in suppliers) + "\n\n"
-    f"Sanctions: {outside}\n\n"
-    "For each supplier, write one concise risk note (≤12 words)."
+# 2) Initialize the CrewAI agent
+agent = Agent(
+    role="Risk Analyst",
+    goal="Analyze supplier risks and provide concise risk notes",
+    backstory="I analyze supplier data and generate risk notes.",
+    verbose=True,
+    allow_delegation=True,
+    llm=llm
 )
 
-# 3) Generate text using Gemma 2B
-response = requests.post(
-    f"{OLLAMA_URL}/api/generate",
-    json={"model": MODEL_NAME, "prompt": prompt, "stream": False},
-    timeout=120  # increase timeout for first run
+# 3) Create the task
+task = Task(
+    description=f"""Analyze supplier risks for the following supplier info:
+{supplier_text}
+Take into account the following sanctions data:
+{outside_text}
+Provide concise risk notes for each supplier (<= 12 words).""",
+    expected_output="A list of concise risk notes for each supplier (<= 12 words)",
+    agent=agent
 )
 
-# 4) Print the response
-if response.status_code == 200:
-    data = response.json()
-    print(response.json()["response"])
-else:
-    print("Error:", response.status_code, response.text)
+# 4) Create and run the Crew
+crew = Crew(
+     agents=[agent],
+     model="ollama/gemma2:2b",
+     tasks= [task],
+     cache=True,
+     verbose=True,
+     process=Process.sequential,
+     planning=False,
+     planning_llm=llm
+ )
+# 5) Kickoff the crew and get results
+results = crew.kickoff()
+print(results)

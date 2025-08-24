@@ -1,4 +1,4 @@
-import sqlite3, subprocess, requests
+import sqlite3, subprocess, requests, json
 
 # 0) Setup
 MODEL_NAME = "gemma2:2b"
@@ -13,15 +13,18 @@ if MODEL_NAME not in result.stdout:
 
 # 2) Read supplier list
 conn = sqlite3.connect('risk.db')
-suppliers = conn.execute("SELECT supplier_name, delivery_days FROM suppliers").fetchall()
+suppliers = conn.execute("SELECT supplier_name, delivery_days, country FROM suppliers").fetchall()
+supplier_text = "\n".join([f"{name}: {days} days from {location}" for name, days, location in suppliers])
 outside = conn.execute("SELECT data FROM outside_data WHERE source='sanctions'").fetchone()[0]
+sanctions_data = json.loads(outside)
+outside_text = "\n".join([f"Supplier: {item['Supplier']}, Status: {item['Status']}" for item in sanctions_data])
 conn.close()
 
 # 3) Build the prompt
 prompt = (
-    "Suppliers and delivery days:\n"
-    + "\n".join(f"{n}: {d} days" for n, d in suppliers) + "\n\n"
-    f"Sanctions: {outside}\n\n"
+    "Supplier data:\n"
+    + supplier_text + "\n\n"
+    "Sanctions:" + outside_text + "\n\n"
     "For each supplier, write one concise risk note (≤12 words)."
 )
 
