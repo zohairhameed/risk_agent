@@ -45,8 +45,6 @@ fixer = Agent(
 )
 
 # 5) Define Tasks with chaining
-
-# Task 1: Format real data
 t1 = Task(
     description=f"""
 Format a structured summary suitable for scoring.
@@ -60,7 +58,6 @@ Data:
     agent=gatherer
 )
 
-# Task 2: Score suppliers using Task 1 output (improved prompt)
 t2 = Task(
     description="""
 Assign each supplier a risk score from 1 (lowest risk) to 10 (highest risk).
@@ -79,7 +76,6 @@ Example format: {"Supplier A": 3, "Supplier B": 7}
     agent=scorer
 )
 
-# Task 3: Suggest mitigations using Task 2 output (improved prompt)
 t3 = Task(
     description="""
 Suggest one practical, low-cost mitigation action per supplier based on their risk scores.
@@ -110,24 +106,11 @@ results = crew.kickoff()
 
 # 8) Helper function to clean JSON output
 def clean_json_output(raw_output):
-    """Clean markdown formatting from JSON output"""
-    # Convert to string if it's not already
     text = str(raw_output)
-    
-    # Remove markdown code blocks
     text = re.sub(r'```json\s*', '', text)
     text = re.sub(r'```\s*', '', text)
-    
-    # Remove any leading/trailing whitespace
     text = text.strip()
-    
-    try:
-        # Parse and reformat the JSON for clean display
-        parsed = json.loads(text)
-        return json.dumps(parsed, indent=2)
-    except json.JSONDecodeError:
-        # If parsing fails, return cleaned text
-        return text
+    return text
 
 # 9) Display results with clean formatting
 task_outputs = results.tasks_output
