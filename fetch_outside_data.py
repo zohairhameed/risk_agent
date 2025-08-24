@@ -20,7 +20,7 @@ def fetch_weather():
 
 # 3) Example: OFAC sanctions list (static CSV for demo)
 def fetch_sanctions():
-    return [{"Supplier": "Acme Bolts", "Status": "Country Sanctions"}]
+    return [{"Supplier": "Acme Bolts", "Status": "China Sanctions"}]
 
 # 4) Save everything to SQLite
 conn = sqlite3.connect(DB)
