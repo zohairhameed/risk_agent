@@ -1,38 +1,41 @@
 import sqlite3, subprocess, requests
+from crewai import Agent, Task, Process, Crew, LLM
 
-# 0) Setup
+# 0) Ensure model is downloaded
 MODEL_NAME = "gemma2:2b"
 OLLAMA_URL = "http://localhost:11434"
 
-# 1) Ensure model is downloaded
+# Check if model exists locally
 result = subprocess.run(["ollama", "list"], capture_output=True, text=True)
 if MODEL_NAME not in result.stdout:
     print(f"Model {MODEL_NAME} not found. Pulling now...")
     subprocess.run(["ollama", "pull", MODEL_NAME])
     print(f"Model {MODEL_NAME} downloaded.")
 
-# 2) Read supplier list
+# 1) Read supplier list
 conn = sqlite3.connect('risk.db')
 suppliers = conn.execute("SELECT supplier_name, delivery_days FROM suppliers").fetchall()
+outside = conn.execute("SELECT data FROM outside_data WHERE source='sanctions'").fetchone()[0]
 conn.close()
 
-# 3) Build the prompt
+# 2) Build the prompt
 prompt = (
-    "For each supplier, write one short risk note (max 12 words).\n"
-    + "\n".join(f"{name}: {days} days" for name, days in suppliers) + "\n\n"
-    "Risk notes:"
+    "Suppliers and delivery days:\n"
+    + "\n".join(f"{n}: {d} days" for n, d in suppliers) + "\n\n"
+    f"Sanctions: {outside}\n\n"
+    "For each supplier, write one concise risk note (≤12 words)."
 )
 
-# 4) Generate text using Gemma 2B
+# 3) Generate text using Gemma 2B
 response = requests.post(
     f"{OLLAMA_URL}/api/generate",
     json={"model": MODEL_NAME, "prompt": prompt, "stream": False},
     timeout=120  # increase timeout for first run
 )
 
-# 5) Print the response
+# 4) Print the response
 if response.status_code == 200:
     data = response.json()
-    print("Raw model output:", data["response"])
+    print(response.json()["response"])
 else:
     print("Error:", response.status_code, response.text)

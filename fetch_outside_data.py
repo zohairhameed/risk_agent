@@ -1,5 +1,6 @@
 import requests, sqlite3, datetime, json
 
+# 0) Setup
 DB = 'risk.db'
 TODAY = datetime.date.today().isoformat()
 
@@ -32,4 +33,6 @@ for name, func in [("port_delays", fetch_port_delays),
                  (name, json.dumps(func()), TODAY))
 conn.commit()
 conn.close()
+
+# 5) Confirmation
 print("✅ Outside data stored")

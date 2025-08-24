@@ -1,11 +1,18 @@
-from crewai import Agent, Task, Process, Crew, LLM
 import sqlite3
+from crewai import Agent, Task, Process, Crew, LLM
 
-
-#LLM Object from crewai package
+# 0) Initialize the LLM
 llm=LLM(model="ollama/gemma2:2b", base_url="http://localhost:11434")
 
-# Initialize the CrewAI agent
+# 1) Connect to the database and fetch supplier data
+conn = sqlite3.connect('risk.db')
+cursor = conn.cursor()
+cursor.execute("SELECT supplier_name, delivery_days FROM suppliers")
+suppliers = cursor.fetchall()
+supplier_text = "\n".join([f"{name}: {days} days" for name, days in suppliers])
+conn.close()
+
+# 2) Initialize the CrewAI agent
 agent = Agent(
     role="Risk Analyst",
     goal="Analyze supplier risks and provide concise risk notes",
@@ -15,29 +22,16 @@ agent = Agent(
     llm=llm
 )
 
-# Connect to the database
-conn = sqlite3.connect('risk.db')
-cursor = conn.cursor()
-
-# Fetch supplier data
-cursor.execute("SELECT supplier_name, delivery_days FROM suppliers")
-suppliers = cursor.fetchall()
-
-# Close the database connection
-conn.close()
-
-# Format suppliers as plain text
-supplier_text = "\n".join([f"{name}: {days} days" for name, days in suppliers])
-
+# 3) Create the task
 task = Task(
     description=f"""Analyze supplier risks for the following suppliers and their delivery days:
 {supplier_text}
-
 Provide concise risk notes for each supplier.""",
     expected_output="A list of concise risk notes for each supplier",
     agent=agent
 )
 
+# 4) Create and run the Crew
 crew = Crew(
      agents=[agent],
      model="ollama/gemma2:2b",
@@ -49,6 +43,6 @@ crew = Crew(
      planning_llm=llm
  )
 
+# 5) Kickoff the crew and get results
 results = crew.kickoff()
-
 print(results)
