@@ -1,6 +1,5 @@
-import sqlite3, json
+import sqlite3, json, re
 from crewai import Agent, Task, Process, LLM, Crew
-import re
 
 # 1) Initialize the LLM
 llm = LLM(model="ollama/gemma2:2b", base_url="http://localhost:11434")
@@ -133,30 +132,15 @@ def clean_json_output(raw_output):
 # 9) Display results with clean formatting
 task_outputs = results.tasks_output
 
-print("\n--- Task 1 (Summary) ---")
-print(task_outputs[0])
-
-print("\n--- Task 2 (Risk Scores) ---")
 clean_scores = clean_json_output(task_outputs[1])
-print(clean_scores)
-
-print("\n--- Task 3 (Mitigations) ---")
 clean_mitigations = clean_json_output(task_outputs[2])
-print(clean_mitigations)
+scores_dict = json.loads(clean_scores)
+mitigations_dict = json.loads(clean_mitigations)
 
-# 10) Optional: Display in a more readable table format
-print("\n--- Combined Results (Table Format) ---")
-try:
-    scores_dict = json.loads(clean_scores)
-    mitigations_dict = json.loads(clean_mitigations)
-    
-    print(f"{'Supplier':<15} {'Risk Score':<12} {'Mitigation Action'}")
-    print("-" * 80)
-    
-    for supplier in scores_dict:
-        score = scores_dict.get(supplier, "N/A")
-        mitigation = mitigations_dict.get(supplier, "N/A")
-        print(f"{supplier:<15} {score:<12} {mitigation}")
-        
-except (json.JSONDecodeError, KeyError) as e:
-    print(f"Could not create table format: {e}")
+print("\n--- Combined Results (Table Format) ---")    
+print(f"{'Supplier':<15} {'Risk Score':<12} {'Mitigation Action'}")
+print("-" * 80)    
+for supplier in scores_dict:
+    score = scores_dict.get(supplier, "N/A")
+    mitigation = mitigations_dict.get(supplier, "N/A")
+    print(f"{supplier:<15} {score:<12} {mitigation}")
